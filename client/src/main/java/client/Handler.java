@@ -1,35 +1,53 @@
 package client;
 
-import java.io.IOException;
-import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.HttpMethod;
+import com.amazonaws.SdkClientException;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.amazonaws.services.s3.event.S3EventNotification.S3Entity;
-import client.ReturnPojo;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ListObjectsV2Result;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+
+import java.net.URL;
+import java.util.List;
 
 public class Handler {
 
-  private AmazonS3 s3;
+	public static void main(String[] args) {
+		String bucket_name = "big-media";
 
-  public Handler() {
-    s3 = AmazonS3ClientBuilder.defaultClient();
-  }
+		System.out.format("Objects in S3 bucket %s:\n", bucket_name);
+		final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+		ListObjectsV2Result result = s3.listObjectsV2(bucket_name);
+		List<S3ObjectSummary> objects = result.getObjectSummaries();
+		// for (S3ObjectSummary os : objects) {
+		// 	System.out.println("* " + os.getKey());
+		// }
 
-  public ReturnPojo handler(S3Event event, Context context) throws IOException {
-    S3Entity e = event.getRecords().get(0).getS3();
-    String bucket = e.getBucket().getName();
-    String object = e.getObject().getKey();
+		try {
+			java.util.Date expiration = new java.util.Date();
+						long expTimeMillis = expiration.getTime();
+						expTimeMillis += 1000 * 60 * 60;
+						expiration.setTime(expTimeMillis);
 
-    S3Object obj = s3.getObject(bucket,object);
+						// Generate the presigned URL.
+						System.out.println("Generating pre-signed URL.");
+						GeneratePresignedUrlRequest generatePresignedUrlRequest =
+										new GeneratePresignedUrlRequest(bucket_name, objects.get(1).getKey())
+														.withMethod(HttpMethod.GET)
+														.withExpiration(expiration);
+						URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);
+						System.out.println(objects.get(1).getKey());
+						System.out.println("Pre-Signed URL: " + url.toString());
+		} catch (AmazonServiceException e){
+			e.printStackTrace();
+		} catch (SdkClientException e){
+			e.printStackTrace();
+		}
 
-    byte[] bytes = new byte[100];
-    S3ObjectInputStream str = obj.getObjectContent();
-    str.read(bytes,0,bytes.length);
-
-    return new ReturnPojo(bucket, object, bytes);
-  }
+	}
 }
-
