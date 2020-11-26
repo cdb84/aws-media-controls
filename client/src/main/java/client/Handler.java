@@ -14,40 +14,104 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Date;
 
 public class Handler {
 
-	public static void main(String[] args) {
-		String bucket_name = "big-media";
+	private String bucketName;
+	private final AmazonS3 s3Instance;
+	private ListObjectsV2Result cache;
 
-		System.out.format("Objects in S3 bucket %s:\n", bucket_name);
-		final AmazonS3 s3 = AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
-		ListObjectsV2Result result = s3.listObjectsV2(bucket_name);
-		List<S3ObjectSummary> objects = result.getObjectSummaries();
-		// for (S3ObjectSummary os : objects) {
-		// 	System.out.println("* " + os.getKey());
-		// }
+	Handler(String bucketName, AmazonS3 s3Instance){
+		this.bucketName = bucketName;
+		this.s3Instance = s3Instance;
+		refreshCache();
+	}
 
+	Handler(String bucketName, Regions region){
+		this.bucketName = bucketName;
+		this.s3Instance = AmazonS3ClientBuilder.standard().withRegion(region).build();
+		refreshCache();
+	}
+
+	/**
+	 * Use this after making any updates to the S3 bucket in program, or if it's been a while
+	 * since the last refresh.
+	 */
+	private void refreshCache(){
+		this.cache = s3Instance.listObjectsV2(this.bucketName);
+	}
+
+	public List<S3ObjectSummary> returnListOfAllObjectSummaries(){
+		return this.cache.getObjectSummaries();
+	}
+
+	public List<S3ObjectSummary> returnListOfAllTopLevelFolderSummaries(){
+		List<S3ObjectSummary> res = new ArrayList<S3ObjectSummary>();
+		
+		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()){
+			if (returnDelimitedPath(object).length == 1){
+				res.add(object);
+			}
+		}
+
+		return res;
+	}
+
+	public URL generatePresignedUrlFromKey(String key){
+		Date expiration = new java.util.Date();
+		long expTimeMillis = expiration.getTime();
+		expTimeMillis += 1000 * 60 * 60;
+		expiration.setTime(expTimeMillis);
+		return this.generatePresignedUrlFromKey(key, expiration);
+	}
+
+	public URL generatePresignedUrlFromKey(String key, Date expiration){
 		try {
-			java.util.Date expiration = new java.util.Date();
-						long expTimeMillis = expiration.getTime();
-						expTimeMillis += 1000 * 60 * 60;
-						expiration.setTime(expTimeMillis);
-
-						// Generate the presigned URL.
-						System.out.println("Generating pre-signed URL.");
-						GeneratePresignedUrlRequest generatePresignedUrlRequest =
-										new GeneratePresignedUrlRequest(bucket_name, objects.get(1).getKey())
-														.withMethod(HttpMethod.GET)
-														.withExpiration(expiration);
-						URL url = s3.generatePresignedUrl(generatePresignedUrlRequest);
-						System.out.println(objects.get(1).getKey());
-						System.out.println("Pre-Signed URL: " + url.toString());
+			GeneratePresignedUrlRequest generatePresignedUrlRequest =
+							new GeneratePresignedUrlRequest(this.bucketName, key)
+											.withMethod(HttpMethod.GET)
+											.withExpiration(expiration);
+			return s3Instance.generatePresignedUrl(generatePresignedUrlRequest);
 		} catch (AmazonServiceException e){
 			e.printStackTrace();
 		} catch (SdkClientException e){
 			e.printStackTrace();
+		} finally {
+			return null;
 		}
+	}
 
+	public static void main(String[] args) {
+		String bucket_name = "big-media";
+		Handler h = new Handler(bucket_name, Regions.US_EAST_2);
+
+		for(S3ObjectSummary ob : h.returnListOfAllObjectSummaries()){
+			System.out.println("* "+ob.getKey()+"\n");
+			String [] parents = returnListOfAllParentDirectories(ob);
+			for (String p : parents){
+				System.out.print(p+", ");
+			}
+			System.out.println();
+		}
+	}
+
+	public static String [] returnListOfAllParentDirectories(S3ObjectSummary object){
+		String objKey = object.getKey();
+		String [] delimitedPath = returnDelimitedPath(object);
+		if (delimitedPath.length > 1){
+			return Arrays.copyOfRange(delimitedPath, 0, delimitedPath.length - 1);
+		} else {
+			return new String[0];
+		}
+	}
+
+	public static String [] returnDelimitedPath(S3ObjectSummary object){
+		String objKey = object.getKey();
+		String [] res = objKey.split("/");
+		return res;
 	}
 }
