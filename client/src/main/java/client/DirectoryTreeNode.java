@@ -1,9 +1,10 @@
 package client;
 
+import java.util.List;
 import java.util.ArrayList;
 
 public class DirectoryTreeNode<T>{
-    final T value;
+    public T value;
     private List<DirectoryTreeNode<T>> children;
 
     DirectoryTreeNode(){
@@ -15,7 +16,7 @@ public class DirectoryTreeNode<T>{
         this.children = new ArrayList<DirectoryTreeNode<T>>();
     }
 
-    public addChild(DirectoryTreeNode<T> child){
+    public void addChild(DirectoryTreeNode<T> child){
         children.add(child);
     }
 
