@@ -20,15 +20,19 @@ public class DirectoryTreeNode<T>{
         children.add(child);
     }
 
-    public DirectoryTreeNode<T> findValue(T value){
-        if (this.value.toString() == value.toString()){
+    public DirectoryTreeNode<T> findValue(T needle){
+        if (this.value != null && this.value.equals(needle)){
             return this;
         }
-        else {
+        else{
             for(DirectoryTreeNode<T> child : children){
-                return child.findValue(value);
+                return child.findValue(needle);
             }
+            return null;
         }
-        return null;
+    }
+
+    public String toString(){
+        return this.value.toString();
     }
 }
