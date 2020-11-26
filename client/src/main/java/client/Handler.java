@@ -20,7 +20,6 @@ import java.util.Scanner;
 import java.util.Date;
 
 public class Handler {
-
 	private String bucketName;
 	private final AmazonS3 s3Instance;
 	private ListObjectsV2Result cache;
