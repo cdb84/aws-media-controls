@@ -1,3 +1,5 @@
 target/
 .vscode/
+client/.settings/
+client/.project
 client/dependency-reduced-pom.xml
