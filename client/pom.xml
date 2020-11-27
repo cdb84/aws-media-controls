@@ -91,7 +91,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <!-- <classpathPrefix>lib/</classpathPrefix> -->
-              <mainClass>client.Handler</mainClass>
+              <mainClass>client.Client</mainClass>
             </manifest>
           </archive>
         </configuration>

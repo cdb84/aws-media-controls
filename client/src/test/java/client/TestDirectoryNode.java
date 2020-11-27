@@ -82,7 +82,8 @@ public class TestDirectoryNode{
         // this is smoke testing, because it doesn't actually ensure they were
         // added in the right in order
         for (String item : pathArray){
-            assertNotNull(node.findValue(item));
+            DirectoryTreeNode<String> found = node.findValue(item);
+            assertNotNull(found);
         }
 
         ArrayList<String> treeRep = node.toArrayList();

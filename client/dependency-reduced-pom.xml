@@ -25,7 +25,7 @@
           <archive>
             <manifest>
               <addClasspath>true</addClasspath>
-              <mainClass>client.Handler</mainClass>
+              <mainClass>client.Client</mainClass>
             </manifest>
           </archive>
         </configuration>

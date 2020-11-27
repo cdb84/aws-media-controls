@@ -105,11 +105,6 @@ public class Handler {
 		}
 	}
 
-	public static void main(String[] args) {
-		String bucket_name = "big-media";
-		Handler h = new Handler(bucket_name, Regions.US_EAST_2);
-	}
-
 	public static String [] returnListOfAllParentDirectories(S3ObjectSummary object){
 		String objKey = object.getKey();
 		String [] delimitedPath = returnDelimitedPath(object);
