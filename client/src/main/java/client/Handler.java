@@ -14,6 +14,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Stack;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -23,6 +24,7 @@ public class Handler {
 	private String bucketName;
 	private final AmazonS3 s3Instance;
 	private ListObjectsV2Result cache;
+	private DirectoryTreeNode<String> bucketStructure;
 
 	Handler(String bucketName, AmazonS3 s3Instance){
 		this.bucketName = bucketName;
@@ -42,6 +44,25 @@ public class Handler {
 	 */
 	private void refreshCache(){
 		this.cache = s3Instance.listObjectsV2(this.bucketName);
+		refreshStructure();
+	}
+
+	private void refreshStructure(){
+		ArrayList<Stack<String>> pathStacks = new ArrayList<Stack<String>>();
+		this.bucketStructure = new DirectoryTreeNode<String>(this.bucketName);
+		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()){
+			String [] pathAsArray = object.getKey().split("/");
+			Stack<String> pathAsStack = new Stack<String>();
+			for(int i = pathAsArray.length - 1; i >= 0; i--){
+				String item = pathAsArray[i];
+				pathAsStack.push(item);
+			}
+			pathStacks.add(pathAsStack);
+		}
+
+		for (Stack<String> pathAsStack : pathStacks){
+			bucketStructure.addPath(pathAsStack);
+		}
 	}
 
 	public List<S3ObjectSummary> returnListOfAllObjectSummaries(){
@@ -87,15 +108,6 @@ public class Handler {
 	public static void main(String[] args) {
 		String bucket_name = "big-media";
 		Handler h = new Handler(bucket_name, Regions.US_EAST_2);
-
-		for(S3ObjectSummary ob : h.returnListOfAllObjectSummaries()){
-			System.out.println("* "+ob.getKey()+"\n");
-			String [] parents = returnListOfAllParentDirectories(ob);
-			for (String p : parents){
-				System.out.print(p+", ");
-			}
-			System.out.println();
-		}
 	}
 
 	public static String [] returnListOfAllParentDirectories(S3ObjectSummary object){

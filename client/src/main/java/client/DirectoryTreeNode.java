@@ -72,4 +72,8 @@ public class DirectoryTreeNode<T>{
     public String toString(){
         return this.value.toString();
     }
+
+    public List<DirectoryTreeNode<T>> getChildren(){
+        return new ArrayList<DirectoryTreeNode<T>>(this.children);
+    }
 }
