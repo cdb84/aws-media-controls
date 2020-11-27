@@ -3,6 +3,7 @@ package client;
 import org.junit.jupiter.api.Test;
 import java.util.Stack;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,9 +28,9 @@ public class TestDirectoryNode{
         DirectoryTreeNode<String> node = new DirectoryTreeNode<String>();
         DirectoryTreeNode<String> child = new DirectoryTreeNode<String>(value);
         node.addChild(child);
-        DirectoryTreeNode<String> actual = node.findValue(value);
-        assertNotNull(actual);
-        assertSame(child, actual);
+        List<DirectoryTreeNode<String>> children = node.getChildren();
+        assertEquals(1, children.size());
+        assertSame(child, children.get(0));
     }
 
     @Test
