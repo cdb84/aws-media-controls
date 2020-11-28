@@ -95,4 +95,36 @@ public class TestDirectoryNode{
             assertEquals(pathArray[i], treeRep.get(i + 1));
         }
     }
+
+    @Test
+    public void testAddSimilarPath(){
+        Stack<String> pathStckA = new Stack<String>();
+        Stack<String> pathStckB = new Stack<String>();
+        String pathStringA = "etc/bin/urs/share/lol";
+        String pathStringB = "etc/bin/urs/nothing/no";
+        String [] pathArrayA = pathStringA.split("/");
+        String [] pathArrayB = pathStringB.split("/");
+
+        for (int i = pathArrayA.length-1; i>= 0; i--){
+            pathStckA.push(pathArrayA[i]);
+            pathStckB.push(pathArrayB[i]);
+        }
+        DirectoryTreeNode<String> node = new DirectoryTreeNode<String>();
+        node.addPath(pathStckA);
+        node.addPath(pathStckB);
+        // node.printTree();
+        // a quick smoke test to ensure we can find everything that 
+        // went into the tree
+
+        DirectoryTreeNode<String> foundA = node.findValue("lol");
+        DirectoryTreeNode<String> foundB = node.findValue("no");
+        
+        assertNotNull(foundA);
+        assertNotNull(foundB);
+
+        ArrayList<String> treeRep = node.toArrayList();
+
+        // off by one because head is null
+        assertEquals(8, treeRep.size());
+    }
 }

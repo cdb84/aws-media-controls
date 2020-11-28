@@ -46,10 +46,15 @@ public class DirectoryTreeNode<T>{
             return this;
         }
         else{
+            DirectoryTreeNode<T> found = null;
             for(DirectoryTreeNode<T> child : children){
-                return child.findValue(needle);
+                if (found == null){
+                    found = child.findValue(needle);
+                } else {
+                    break;
+                }
             }
-            return null;
+            return found;
         }
     }
 
