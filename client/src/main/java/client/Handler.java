@@ -26,54 +26,54 @@ public class Handler {
 	private ListObjectsV2Result cache;
 	private DirectoryTreeNode<String> bucketStructure;
 
-	Handler(String bucketName, AmazonS3 s3Instance){
+	Handler(String bucketName, AmazonS3 s3Instance) {
 		this.bucketName = bucketName;
 		this.s3Instance = s3Instance;
 		refreshCache();
 	}
 
-	Handler(String bucketName, Regions region){
+	Handler(String bucketName, Regions region) {
 		this.bucketName = bucketName;
 		this.s3Instance = AmazonS3ClientBuilder.standard().withRegion(region).build();
 		refreshCache();
 	}
 
 	/**
-	 * Use this after making any updates to the S3 bucket in program, or if it's been a while
-	 * since the last refresh.
+	 * Use this after making any updates to the S3 bucket in program, or if it's
+	 * been a while since the last refresh.
 	 */
-	private void refreshCache(){
+	private void refreshCache() {
 		this.cache = s3Instance.listObjectsV2(this.bucketName);
 		refreshStructure();
 	}
 
-	private void refreshStructure(){
+	private void refreshStructure() {
 		ArrayList<Stack<String>> pathStacks = new ArrayList<Stack<String>>();
 		this.bucketStructure = new DirectoryTreeNode<String>(this.bucketName);
-		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()){
-			String [] pathAsArray = object.getKey().split("/");
+		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()) {
+			String[] pathAsArray = object.getKey().split("/");
 			Stack<String> pathAsStack = new Stack<String>();
-			for(int i = pathAsArray.length - 1; i >= 0; i--){
+			for (int i = pathAsArray.length - 1; i >= 0; i--) {
 				String item = pathAsArray[i];
 				pathAsStack.push(item);
 			}
 			pathStacks.add(pathAsStack);
 		}
 
-		for (Stack<String> pathAsStack : pathStacks){
+		for (Stack<String> pathAsStack : pathStacks) {
 			bucketStructure.addPath(pathAsStack);
 		}
 	}
 
-	public List<S3ObjectSummary> returnListOfAllObjectSummaries(){
+	public List<S3ObjectSummary> returnListOfAllObjectSummaries() {
 		return this.cache.getObjectSummaries();
 	}
 
-	public List<S3ObjectSummary> returnListOfAllTopLevelFolderSummaries(){
+	public List<S3ObjectSummary> returnListOfAllTopLevelFolderSummaries() {
 		List<S3ObjectSummary> res = new ArrayList<S3ObjectSummary>();
-		
-		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()){
-			if (returnDelimitedPath(object).length == 1){
+
+		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()) {
+			if (returnDelimitedPath(object).length == 1) {
 				res.add(object);
 			}
 		}
@@ -81,7 +81,7 @@ public class Handler {
 		return res;
 	}
 
-	public URL generatePresignedUrlFromKey(String key){
+	public URL generatePresignedUrlFromKey(String key) {
 		Date expiration = new java.util.Date();
 		long expTimeMillis = expiration.getTime();
 		expTimeMillis += 1000 * 60 * 60;
@@ -89,35 +89,33 @@ public class Handler {
 		return this.generatePresignedUrlFromKey(key, expiration);
 	}
 
-	public URL generatePresignedUrlFromKey(String key, Date expiration){
+	public URL generatePresignedUrlFromKey(String key, Date expiration) {
 		try {
-			GeneratePresignedUrlRequest generatePresignedUrlRequest =
-							new GeneratePresignedUrlRequest(this.bucketName, key)
-											.withMethod(HttpMethod.GET)
-											.withExpiration(expiration);
+			GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(this.bucketName, key)
+					.withMethod(HttpMethod.GET).withExpiration(expiration);
 			return s3Instance.generatePresignedUrl(generatePresignedUrlRequest);
-		} catch (AmazonServiceException e){
+		} catch (AmazonServiceException e) {
 			e.printStackTrace();
-		} catch (SdkClientException e){
+		} catch (SdkClientException e) {
 			e.printStackTrace();
 		} finally {
 			return null;
 		}
 	}
 
-	public static String [] returnListOfAllParentDirectories(S3ObjectSummary object){
+	public static String[] returnListOfAllParentDirectories(S3ObjectSummary object) {
 		String objKey = object.getKey();
-		String [] delimitedPath = returnDelimitedPath(object);
-		if (delimitedPath.length > 1){
+		String[] delimitedPath = returnDelimitedPath(object);
+		if (delimitedPath.length > 1) {
 			return Arrays.copyOfRange(delimitedPath, 0, delimitedPath.length - 1);
 		} else {
 			return new String[0];
 		}
 	}
 
-	public static String [] returnDelimitedPath(S3ObjectSummary object){
+	public static String[] returnDelimitedPath(S3ObjectSummary object) {
 		String objKey = object.getKey();
-		String [] res = objKey.split("/");
+		String[] res = objKey.split("/");
 		return res;
 	}
 }
