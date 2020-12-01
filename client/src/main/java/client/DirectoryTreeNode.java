@@ -87,6 +87,15 @@ public class DirectoryTreeNode<T> {
 		return new ArrayList<DirectoryTreeNode<T>>(this.children);
 	}
 
+	public List<DirectoryTreeNode<T>> getParents(){
+		List<DirectoryTreeNode<T>> parents = new ArrayList<DirectoryTreeNode<T>>();
+		if (this.parent != null){
+			parents.add(this.parent);
+			parents.addAll(this.parent.getParents());
+		}
+		return parents;
+	}
+
 	public Stack<T> getPath(){
 		Stack<T> res = new Stack<T>();
 		res.push(this.value);

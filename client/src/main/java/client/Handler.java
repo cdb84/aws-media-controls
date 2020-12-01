@@ -49,7 +49,7 @@ public class Handler {
 
 	private void refreshStructure() {
 		ArrayList<Stack<String>> pathStacks = new ArrayList<Stack<String>>();
-		this.bucketStructure = new DirectoryTreeNode<String>(this.bucketName);
+		this.bucketStructure = new DirectoryTreeNode<String>();
 		for (S3ObjectSummary object : this.returnListOfAllObjectSummaries()) {
 			String[] pathAsArray = object.getKey().split("/");
 			Stack<String> pathAsStack = new Stack<String>();
@@ -67,6 +67,11 @@ public class Handler {
 
 	public List<S3ObjectSummary> returnListOfAllObjectSummaries() {
 		return this.cache.getObjectSummaries();
+	}
+
+	public List<DirectoryTreeNode<String>> returnEverythingAbove(String value){
+		DirectoryTreeNode<String> found = bucketStructure.findValue(value);
+		return found.getParents();
 	}
 
 	public List<DirectoryTreeNode<String>> returnEverythingUnder(String value){

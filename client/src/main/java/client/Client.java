@@ -74,13 +74,15 @@ public class Client {
 			GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
 			gridLayout.setHorizontalSpacing(3);
 
-			contentPanel.addComponent(new Label("Read-only Combo Box (forced size)"));
 			List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
 			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
 			topLevelComboBox.setReadOnly(true);
 			topLevelComboBox.addListener((int selectedIndex, int previousSelection) -> {
-				if (selectedIndex != previousSelection)
-					addForkedComboBoxorOpenPresign(h, contentPanel, topLevelComboBox, selectedIndex, exec);
+				if (selectedIndex != previousSelection){
+					contentPanel.removeAllComponents();
+					contentPanel.addComponent(topLevelComboBox);
+				}
+				addForkedComboBoxorOpenPresign(h, contentPanel, topLevelComboBox, selectedIndex, exec);
 			});
 
 			contentPanel.addComponent(topLevelComboBox);
@@ -99,25 +101,38 @@ public class Client {
 			int selection, String executionBinary) {
 		// just get the children of whatever was selected
 		String selectionValue = prevComboBox.getItem(selection).replaceAll("/", "");
-		String path = "NULL FOR NOW";
 		List<DirectoryTreeNode<String>> childrenOfSelection = handler.returnEverythingUnder(selectionValue);
 		List<String> childrenOfSelectionValues = childrenOfSelection.stream().map(treeNode -> treeNode.toString())
 				.collect(Collectors.toList());
 		if (childrenOfSelection.size() == 0) {
+			List<DirectoryTreeNode<String>> parentsOfSelection = handler.returnEverythingAbove(selectionValue);
 			// should really execute here....
+			String path = "";
+			for (DirectoryTreeNode<String> parent : parentsOfSelection){
+				if (parent.value != null){
+					path = parent.value+"/"+path;
+				}
+			}
+			path += selectionValue;
 			ProcessBuilder pb = new ProcessBuilder(executionBinary, handler.generatePresignedUrlFromKey(path).toString());
-			pb.inheritIO(); // <-- passes IO from forked process.
+			// pb.inheritIO(); // <-- passes IO from forked process.
 			try {
 				Process p = pb.start(); // <-- forkAndExec on Unix
-				p.waitFor(); // <-- waits for the forked process to complete.
+				// p.waitFor(); // <-- waits for the forked process to complete.
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			contentPanel.removeComponent(prevComboBox);
+			return;
 		}
 		ComboBox<String> childComboBox = new ComboBox<>(childrenOfSelectionValues);
 		childComboBox.setReadOnly(true);
 		childComboBox.addListener((int selectedIndex, int previousSelection) -> {
+			// contentPanel.removeComponent(childComboBox);
 			addForkedComboBoxorOpenPresign(handler, contentPanel, childComboBox, selectedIndex, executionBinary);
+		});
+		prevComboBox.addListener((int selectedIndex, int previousSelection) -> {
+			contentPanel.removeComponent(childComboBox);
 		});
 		contentPanel.addComponent(childComboBox);
 	}
