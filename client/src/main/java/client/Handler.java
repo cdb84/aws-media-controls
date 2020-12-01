@@ -69,6 +69,19 @@ public class Handler {
 		return this.cache.getObjectSummaries();
 	}
 
+	public List<DirectoryTreeNode<String>> returnEverythingUnder(String value){
+		DirectoryTreeNode<String> found = bucketStructure.findValue(value);
+		return found.getChildren();
+	}
+
+	public List<String> returnListOfAllTopLevelFolders(){
+		List<String> res = new ArrayList<String>();
+		for (S3ObjectSummary object : this.returnListOfAllTopLevelFolderSummaries()){
+			res.add(object.getKey());
+		}
+		return res;
+	}
+
 	public List<S3ObjectSummary> returnListOfAllTopLevelFolderSummaries() {
 		List<S3ObjectSummary> res = new ArrayList<S3ObjectSummary>();
 
@@ -98,13 +111,11 @@ public class Handler {
 			e.printStackTrace();
 		} catch (SdkClientException e) {
 			e.printStackTrace();
-		} finally {
-			return null;
 		}
+		return null;
 	}
 
 	public static String[] returnListOfAllParentDirectories(S3ObjectSummary object) {
-		String objKey = object.getKey();
 		String[] delimitedPath = returnDelimitedPath(object);
 		if (delimitedPath.length > 1) {
 			return Arrays.copyOfRange(delimitedPath, 0, delimitedPath.length - 1);

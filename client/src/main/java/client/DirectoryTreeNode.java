@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class DirectoryTreeNode<T> {
 	public T value;
 	private List<DirectoryTreeNode<T>> children;
+	private DirectoryTreeNode<T> parent;
 
 	DirectoryTreeNode() {
 		this.value = null;
@@ -16,6 +17,11 @@ public class DirectoryTreeNode<T> {
 	DirectoryTreeNode(T value) {
 		this.value = value;
 		this.children = new ArrayList<DirectoryTreeNode<T>>();
+	}
+
+	DirectoryTreeNode(T value, DirectoryTreeNode<T> parent){
+		this(value);
+		this.parent = parent;
 	}
 
 	public void addChild(DirectoryTreeNode<T> child) {
@@ -36,7 +42,7 @@ public class DirectoryTreeNode<T> {
 			}
 		}
 		// otherwise, we need to add a bunch of new nodes on!
-		DirectoryTreeNode<T> newChild = new DirectoryTreeNode<T>(curItem);
+		DirectoryTreeNode<T> newChild = new DirectoryTreeNode<T>(curItem, this);
 		this.children.add(newChild);
 		newChild.addPath(pathItems);
 	}
@@ -79,5 +85,16 @@ public class DirectoryTreeNode<T> {
 
 	public List<DirectoryTreeNode<T>> getChildren() {
 		return new ArrayList<DirectoryTreeNode<T>>(this.children);
+	}
+
+	public Stack<T> getPath(){
+		Stack<T> res = new Stack<T>();
+		res.push(this.value);
+		if (this.parent != null){
+			for (T upperValues : this.parent.getPath()){
+				res.push(upperValues);
+			}
+		}
+		return res;
 	}
 }

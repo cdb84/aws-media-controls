@@ -1,23 +1,43 @@
 package client;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.googlecode.lanterna.SGR;
-import com.googlecode.lanterna.TerminalPosition;
-import com.googlecode.lanterna.TextColor;
-import com.googlecode.lanterna.graphics.TextGraphics;
-import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.input.KeyType;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.ComboBox;
+import com.googlecode.lanterna.gui2.GridLayout;
+import com.googlecode.lanterna.gui2.Label;
+import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.Window;
+import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.gui2.TextGUI.Listener;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
+enum UIType {
+	CLI, GUI
+}
+
 public class Client {
+
+	static String exec;
 
 	public static void main(String[] args) throws Exception {
 		String bucketName = null;
-		String exec = null;
+		exec = null;
+		UIType uiType = UIType.CLI;
 		if (args.length <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -29,47 +49,76 @@ public class Client {
 		} else {
 			exec = "vlc"; // probably best default in mind
 		}
+		if (args.length == 3 && args[2].equals("--gui")) {
+			uiType = UIType.GUI;
+		}
 		System.err.println("Initializing handler for " + bucketName + " executing " + exec);
 		Handler h = new Handler(bucketName, AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build());
 
-		DefaultTerminalFactory defaultTerminalFactory = new DefaultTerminalFactory();
-
-		Terminal terminal = null;
+		DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
+		Screen screen = null;
 		try {
-			terminal = defaultTerminalFactory.createTerminal();
-			terminal.enterPrivateMode();
-			terminal.clearScreen();
-			terminal.setCursorVisible(false);
-			final TextGraphics textGraphics = terminal.newTextGraphics();
-
-			textGraphics.putString(2, 1, "AWS Media Console - Press ESC to exit", SGR.BOLD);
-			textGraphics.setForegroundColor(TextColor.ANSI.DEFAULT);
-			textGraphics.setBackgroundColor(TextColor.ANSI.DEFAULT);
-			textGraphics.putString(5, 3, "Terminal Size: ", SGR.BOLD);
-			textGraphics.putString(5 + "Terminal Size: ".length(), 3, terminal.getTerminalSize().toString());
-
-			terminal.flush();
-
-			KeyStroke keyStroke = terminal.readInput();
-			Thread.sleep(2000);
-
-			while (keyStroke.getKeyType() != KeyType.Escape) {
-				textGraphics.drawLine(5, 4, terminal.getTerminalSize().getColumns() - 1, 4, ' ');
-				textGraphics.putString(5, 4, "Last Keystroke: ", SGR.BOLD);
-				textGraphics.putString(5 + "Last Keystroke: ".length(), 4, keyStroke.toString());
-				terminal.flush();
-				keyStroke = terminal.readInput();
+			Terminal terminal = null;
+			if (uiType == UIType.CLI) {
+				terminal = terminalFactory.createTerminal();
+			} else {
+				terminal = terminalFactory.createTerminalEmulator();
 			}
-		} catch (IOException e) {
+			screen = new TerminalScreen(terminal);
+			screen.startScreen();
+
+			final WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);
+			final Window window = new BasicWindow("AWS Media Console - " + bucketName);
+			Panel contentPanel = new Panel(new GridLayout(4));
+
+			GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
+			gridLayout.setHorizontalSpacing(3);
+
+			contentPanel.addComponent(new Label("Read-only Combo Box (forced size)"));
+			List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
+			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
+			topLevelComboBox.setReadOnly(true);
+			topLevelComboBox.addListener((int selectedIndex, int previousSelection) -> {
+				if (selectedIndex != previousSelection)
+					addForkedComboBoxorOpenPresign(h, contentPanel, topLevelComboBox, selectedIndex, exec);
+			});
+
+			contentPanel.addComponent(topLevelComboBox);
+
+			window.setComponent(contentPanel);
+
+			textGUI.addWindowAndWait(window);
+
+			Thread.sleep(200000);
+		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			if (terminal != null) {
-				try {
-					terminal.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+		}
+	}
+
+	public static void addForkedComboBoxorOpenPresign(Handler handler, Panel contentPanel, ComboBox<String> prevComboBox,
+			int selection, String executionBinary) {
+		// just get the children of whatever was selected
+		String selectionValue = prevComboBox.getItem(selection).replaceAll("/", "");
+		String path = "NULL FOR NOW";
+		List<DirectoryTreeNode<String>> childrenOfSelection = handler.returnEverythingUnder(selectionValue);
+		List<String> childrenOfSelectionValues = childrenOfSelection.stream().map(treeNode -> treeNode.toString())
+				.collect(Collectors.toList());
+		if (childrenOfSelection.size() == 0) {
+			// should really execute here....
+			ProcessBuilder pb = new ProcessBuilder(executionBinary, handler.generatePresignedUrlFromKey(path).toString());
+			pb.inheritIO(); // <-- passes IO from forked process.
+			try {
+				Process p = pb.start(); // <-- forkAndExec on Unix
+				p.waitFor(); // <-- waits for the forked process to complete.
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
+		ComboBox<String> childComboBox = new ComboBox<>(childrenOfSelectionValues);
+		childComboBox.setReadOnly(true);
+		childComboBox.addListener((int selectedIndex, int previousSelection) -> {
+			addForkedComboBoxorOpenPresign(handler, contentPanel, childComboBox, selectedIndex, executionBinary);
+		});
+		contentPanel.addComponent(childComboBox);
 	}
 }
