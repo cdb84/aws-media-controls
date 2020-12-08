@@ -74,7 +74,6 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 
 	private void exec(String selectedValue){
 		// have to execute the apprent file as a presign
-		System.err.println("Executing via "+exec);
 		String path = "";
 		for (DirectoryTreeNode<String> parent : handler.returnEverythingAbove(selectedValue)){
 			if (parent.value != null){

@@ -60,6 +60,7 @@ public class Client {
 		Handler h = new Handler(bucketName, AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build());
 
 		DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
+		terminalFactory.setTerminalEmulatorTitle("AWS Media Console - " + bucketName);
 		Screen screen = null;
 		try {
 			Terminal terminal = null;
@@ -82,13 +83,8 @@ public class Client {
 			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
 			topLevelComboBox.setReadOnly(true);
 			topLevelComboBox.addListener(new AWSComboBoxListener(topLevelComboBox, contentPanel, true, h, exec));
-			Button backButton = new Button("Back");
-			Button launchButton = new Button("Launch in " + exec);
-			// Button launchPlayListButton = new Button("Launch as playlist in " + exec);
 
 			contentPanel.addComponent(topLevelComboBox);
-			// contentPanel.addComponent(backButton);
-			// contentPanel.addComponent(launchButton);
 
 			window.setComponent(contentPanel);
 
