@@ -79,7 +79,7 @@ public class Client {
 				Button submitButton = new Button("Submit");
 
 				final WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);
-				final Window window = new BasicWindow("AWS Media Console - " + bucketName);
+				final Window window = new BasicWindow("AWS Media Console - Enter Bucket Info");
 				Panel contentPanel = new Panel(new GridLayout(1));
 				GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
 				gridLayout.setHorizontalSpacing(4);
