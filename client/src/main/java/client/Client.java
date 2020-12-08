@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
+import javax.swing.ButtonGroup;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -13,6 +14,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.BasicWindow;
+import com.googlecode.lanterna.gui2.Button;
 import com.googlecode.lanterna.gui2.ComboBox;
 import com.googlecode.lanterna.gui2.GridLayout;
 import com.googlecode.lanterna.gui2.Label;
@@ -69,23 +71,86 @@ public class Client {
 
 			final WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);
 			final Window window = new BasicWindow("AWS Media Console - " + bucketName);
-			Panel contentPanel = new Panel(new GridLayout(4));
+			Panel contentPanel = new Panel(new GridLayout(1));
 
 			GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
-			gridLayout.setHorizontalSpacing(3);
+			gridLayout.setHorizontalSpacing(4);
 
 			List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
 			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
+			Stack<List<String>> comboBoxHistory = new Stack<List<String>>();
 			topLevelComboBox.setReadOnly(true);
 			topLevelComboBox.addListener((int selectedIndex, int previousSelection) -> {
-				if (selectedIndex != previousSelection){
-					contentPanel.removeAllComponents();
-					contentPanel.addComponent(topLevelComboBox);
+				if (selectedIndex != previousSelection) {
+					String selectedValue = topLevelComboBox.getItem(selectedIndex).replaceAll("/", "");
+					
+					// save the selections we had previously
+					List<String> currentSelections = new ArrayList<String>();
+					for (int i = 0; i < topLevelComboBox.getItemCount(); i++){
+						currentSelections.add(topLevelComboBox.getItem(i));
+					}
+					System.err.println("Pushing to combobox history");
+					comboBoxHistory.push(currentSelections);
+
+					// now get the new selections
+					List<String> subDirs = h.returnEverythingUnder(selectedValue)
+							.stream().map(treeNode -> treeNode.toString()).collect(Collectors.toList());
+					// if we have new selections in the first place, add them
+					if (subDirs.size() != 0){
+						for (String prevItem : currentSelections){
+							topLevelComboBox.removeItem(prevItem);
+						}
+						for (String item : subDirs) {
+							topLevelComboBox.addItem(item);
+						}
+					}
 				}
-				addForkedComboBoxorOpenPresign(h, contentPanel, topLevelComboBox, selectedIndex, exec);
 			});
 
+			Button backButton = new Button("Back");
+			backButton.addListener((Button button) -> {
+				if (comboBoxHistory.size() == 0){ return; }
+				// get whatever is in there currently 
+				List<String> currentSelections = new ArrayList<String>();
+				for (int i = 0; i < topLevelComboBox.getItemCount(); i++){
+					currentSelections.add(topLevelComboBox.getItem(i));
+				}
+
+				// remove it
+				for (String item : currentSelections){
+					System.err.println("Removing "+item);
+					topLevelComboBox.removeItem(item);
+				}
+
+				// now add back what was in there previously
+				for (String item : comboBoxHistory.pop()){
+					System.err.println("Adding "+item);
+					topLevelComboBox.addItem(item);
+				}
+			});
+			Button launchButton = new Button("Launch in " + exec);
+			launchButton.addListener((Button button) -> {
+				String selectedValue = topLevelComboBox.getSelectedItem().replaceAll("/", "");
+				// we have to launch whatever was picked
+				String path = "";
+				for (DirectoryTreeNode<String> parent : h.returnEverythingAbove(selectedValue)){
+					if (parent.value != null){
+						path = parent.value +"/"+ path;
+					}
+				}
+				path += selectedValue;
+				ProcessBuilder pb = new ProcessBuilder(exec, h.generatePresignedUrlFromKey(path).toString());
+				try {
+					pb.start();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+			// Button launchPlayListButton = new Button("Launch as playlist in " + exec);
+
 			contentPanel.addComponent(topLevelComboBox);
+			contentPanel.addComponent(backButton);
+			contentPanel.addComponent(launchButton);
 
 			window.setComponent(contentPanel);
 
@@ -108,9 +173,9 @@ public class Client {
 			List<DirectoryTreeNode<String>> parentsOfSelection = handler.returnEverythingAbove(selectionValue);
 			// should really execute here....
 			String path = "";
-			for (DirectoryTreeNode<String> parent : parentsOfSelection){
-				if (parent.value != null){
-					path = parent.value+"/"+path;
+			for (DirectoryTreeNode<String> parent : parentsOfSelection) {
+				if (parent.value != null) {
+					path = parent.value + "/" + path;
 				}
 			}
 			path += selectionValue;
