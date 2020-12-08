@@ -20,8 +20,10 @@ import com.googlecode.lanterna.gui2.GridLayout;
 import com.googlecode.lanterna.gui2.Label;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.TextGUI;
 import com.googlecode.lanterna.gui2.Window;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
+import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.gui2.TextGUI.Listener;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -78,79 +80,15 @@ public class Client {
 
 			List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
 			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
-			Stack<List<String>> comboBoxHistory = new Stack<List<String>>();
 			topLevelComboBox.setReadOnly(true);
-			topLevelComboBox.addListener((int selectedIndex, int previousSelection) -> {
-				if (selectedIndex != previousSelection) {
-					String selectedValue = topLevelComboBox.getItem(selectedIndex).replaceAll("/", "");
-					
-					// save the selections we had previously
-					List<String> currentSelections = new ArrayList<String>();
-					for (int i = 0; i < topLevelComboBox.getItemCount(); i++){
-						currentSelections.add(topLevelComboBox.getItem(i));
-					}
-					System.err.println("Pushing to combobox history");
-					comboBoxHistory.push(currentSelections);
-
-					// now get the new selections
-					List<String> subDirs = h.returnEverythingUnder(selectedValue)
-							.stream().map(treeNode -> treeNode.toString()).collect(Collectors.toList());
-					// if we have new selections in the first place, add them
-					if (subDirs.size() != 0){
-						for (String prevItem : currentSelections){
-							topLevelComboBox.removeItem(prevItem);
-						}
-						for (String item : subDirs) {
-							topLevelComboBox.addItem(item);
-						}
-					}
-				}
-			});
-
+			topLevelComboBox.addListener(new AWSComboBoxListener(topLevelComboBox, contentPanel, true, h, exec));
 			Button backButton = new Button("Back");
-			backButton.addListener((Button button) -> {
-				if (comboBoxHistory.size() == 0){ return; }
-				// get whatever is in there currently 
-				List<String> currentSelections = new ArrayList<String>();
-				for (int i = 0; i < topLevelComboBox.getItemCount(); i++){
-					currentSelections.add(topLevelComboBox.getItem(i));
-				}
-
-				// remove it
-				for (String item : currentSelections){
-					System.err.println("Removing "+item);
-					topLevelComboBox.removeItem(item);
-				}
-
-				// now add back what was in there previously
-				for (String item : comboBoxHistory.pop()){
-					System.err.println("Adding "+item);
-					topLevelComboBox.addItem(item);
-				}
-			});
 			Button launchButton = new Button("Launch in " + exec);
-			launchButton.addListener((Button button) -> {
-				String selectedValue = topLevelComboBox.getSelectedItem().replaceAll("/", "");
-				// we have to launch whatever was picked
-				String path = "";
-				for (DirectoryTreeNode<String> parent : h.returnEverythingAbove(selectedValue)){
-					if (parent.value != null){
-						path = parent.value +"/"+ path;
-					}
-				}
-				path += selectedValue;
-				ProcessBuilder pb = new ProcessBuilder(exec, h.generatePresignedUrlFromKey(path).toString());
-				try {
-					pb.start();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			});
 			// Button launchPlayListButton = new Button("Launch as playlist in " + exec);
 
 			contentPanel.addComponent(topLevelComboBox);
-			contentPanel.addComponent(backButton);
-			contentPanel.addComponent(launchButton);
+			// contentPanel.addComponent(backButton);
+			// contentPanel.addComponent(launchButton);
 
 			window.setComponent(contentPanel);
 
@@ -160,45 +98,5 @@ public class Client {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void addForkedComboBoxorOpenPresign(Handler handler, Panel contentPanel, ComboBox<String> prevComboBox,
-			int selection, String executionBinary) {
-		// just get the children of whatever was selected
-		String selectionValue = prevComboBox.getItem(selection).replaceAll("/", "");
-		List<DirectoryTreeNode<String>> childrenOfSelection = handler.returnEverythingUnder(selectionValue);
-		List<String> childrenOfSelectionValues = childrenOfSelection.stream().map(treeNode -> treeNode.toString())
-				.collect(Collectors.toList());
-		if (childrenOfSelection.size() == 0) {
-			List<DirectoryTreeNode<String>> parentsOfSelection = handler.returnEverythingAbove(selectionValue);
-			// should really execute here....
-			String path = "";
-			for (DirectoryTreeNode<String> parent : parentsOfSelection) {
-				if (parent.value != null) {
-					path = parent.value + "/" + path;
-				}
-			}
-			path += selectionValue;
-			ProcessBuilder pb = new ProcessBuilder(executionBinary, handler.generatePresignedUrlFromKey(path).toString());
-			// pb.inheritIO(); // <-- passes IO from forked process.
-			try {
-				Process p = pb.start(); // <-- forkAndExec on Unix
-				// p.waitFor(); // <-- waits for the forked process to complete.
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			contentPanel.removeComponent(prevComboBox);
-			return;
-		}
-		ComboBox<String> childComboBox = new ComboBox<>(childrenOfSelectionValues);
-		childComboBox.setReadOnly(true);
-		childComboBox.addListener((int selectedIndex, int previousSelection) -> {
-			// contentPanel.removeComponent(childComboBox);
-			addForkedComboBoxorOpenPresign(handler, contentPanel, childComboBox, selectedIndex, executionBinary);
-		});
-		prevComboBox.addListener((int selectedIndex, int previousSelection) -> {
-			contentPanel.removeComponent(childComboBox);
-		});
-		contentPanel.addComponent(childComboBox);
 	}
 }
