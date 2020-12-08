@@ -30,13 +30,26 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		this.parentListener = parentListener;
 	}
 
+	public List<String> getSubObjects(String selectedValue){
+		return handler.returnEverythingUnder(selectedValue).stream().map(treeNode -> treeNode.toString())
+		.collect(Collectors.toList());
+	}
+
 	@Override
 	public void onSelectionChanged(int selectedIndex, int previousSelection) {
-		String selectedValue = instance.getItem(selectedIndex).replaceAll("/", "");
+		String withSuffix = instance.getItem(selectedIndex);
+		String selectedValue = withSuffix.replaceAll("/", "");
+		if (selectedValue.equals("Open all as playlist")) {
+			// open as playlist
+			execAllOptions();
+			return;
+		}
 		// now get the new selections
-		List<String> subObjects = handler.returnEverythingUnder(selectedValue).stream().map(treeNode -> treeNode.toString())
-				.collect(Collectors.toList());
-		if (selectedIndex != previousSelection) {
+		List<String> subObjects = getSubObjects(selectedValue);
+		if (subObjects.size() == 0 && withSuffix.charAt(withSuffix.length() - 1) != '/'){
+			exec(selectedValue);
+		}
+		else{
 			// if we had children, they need to go.
 			if (this.children != null && this.children.size() > 0){
 				for(ComboBox<String> child : children){
@@ -50,6 +63,8 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 				if (this.children == null){
 					this.children = new ArrayList<ComboBox<String>>();
 				}
+				// right here we will add the option to open this in as a playlist
+				subObjects.add("Open all as playlist");
 				ComboBox<String> child = new ComboBox<String>(subObjects);
 				addChild(child);
 				child.addListener(new AWSComboBoxListener(child, contentPanel, false, handler, exec, this));
@@ -59,10 +74,7 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 				exec(selectedValue);
 			}
 			
-		}else if (subObjects.size() == 0 && instance.getItem(selectedIndex).charAt(instance.getItem(selectedIndex).length()-1) != '/'){
-			exec(selectedValue);
 		}
-
 	}
 
 	public void addChild(ComboBox<String> child){
@@ -72,16 +84,40 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		}
 	}
 
-	private void exec(String selectedValue){
-		// have to execute the apprent file as a presign
+	private void execAllOptions(){
+		List<String> allOptions = new ArrayList<String>();
+		allOptions.add(exec);
+		for (int i = 0; i < this.instance.getItemCount()-1; i++){
+			System.err.println(this.instance.getItem(i));
+			String url = handler.generatePresignedUrlFromKey(buildPathFor(this.instance.getItem(i))).toString();
+			allOptions.add(url);
+		}
+		String[] args = new String[allOptions.size()];
+		fireProcessBuilder(allOptions.toArray(args));
+	}
+
+	private String buildPathFor(String selectedValue){
 		String path = "";
-		for (DirectoryTreeNode<String> parent : handler.returnEverythingAbove(selectedValue)){
+		List<DirectoryTreeNode<String>> above = handler.returnEverythingAbove(selectedValue);
+		if (above == null) return "";
+		for (DirectoryTreeNode<String> parent : above){
 			if (parent.value != null){
 				path = parent.value +"/"+ path;
 			}
 		}
 		path += selectedValue;
-		ProcessBuilder pb = new ProcessBuilder(exec, handler.generatePresignedUrlFromKey(path).toString());
+		return path;
+	}
+
+	private void exec(String selectedValue){
+		System.err.println(selectedValue);
+		// have to execute the apprent file as a presign
+		String path = buildPathFor(selectedValue);
+		fireProcessBuilder(exec, handler.generatePresignedUrlFromKey(path).toString(), "-f");
+	}
+
+	private void fireProcessBuilder(String...args){
+		ProcessBuilder pb = new ProcessBuilder(args);
 		try {
 			pb.start();
 		} catch (Exception e) {
