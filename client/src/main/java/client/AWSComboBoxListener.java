@@ -88,7 +88,6 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		List<String> allOptions = new ArrayList<String>();
 		allOptions.add(exec);
 		for (int i = 0; i < this.instance.getItemCount()-1; i++){
-			System.err.println(this.instance.getItem(i));
 			String url = handler.generatePresignedUrlFromKey(buildPathFor(this.instance.getItem(i))).toString();
 			allOptions.add(url);
 		}
@@ -110,10 +109,9 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	}
 
 	private void exec(String selectedValue){
-		System.err.println(selectedValue);
 		// have to execute the apprent file as a presign
 		String path = buildPathFor(selectedValue);
-		fireProcessBuilder(exec, handler.generatePresignedUrlFromKey(path).toString(), "-f");
+		fireProcessBuilder(exec, handler.generatePresignedUrlFromKey(path).toString());
 	}
 
 	private void fireProcessBuilder(String...args){
