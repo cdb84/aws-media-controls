@@ -60,7 +60,7 @@ public class Client {
 			uiType = UIType.GUI;
 		}
 		DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
-		terminalFactory.setTerminalEmulatorTitle("AWS Media Console - " + bucketName);
+		terminalFactory.setTerminalEmulatorTitle("AWS Media Console");
 		Screen screen = null;
 		try {
 			Terminal terminal = null;
