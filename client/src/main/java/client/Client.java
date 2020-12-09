@@ -74,8 +74,10 @@ public class Client {
 
 			if (desktopMode){
 				// let's get all the information we can gather from the args
-				TextBox bucketTextBox = new TextBox("S3 Bucket Name");
-				TextBox execTextBox = new TextBox("Executable to run for media");
+				Label bucketPrompt = new Label("S3 Bucket Name");
+				TextBox bucketTextBox = new TextBox();
+				Label execPrompt = new Label("Executable to run for media");
+				TextBox execTextBox = new TextBox();
 				Button submitButton = new Button("Submit");
 
 				final WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);
@@ -84,7 +86,9 @@ public class Client {
 				GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
 				gridLayout.setHorizontalSpacing(4);
 
+				contentPanel.addComponent(bucketPrompt);
 				contentPanel.addComponent(bucketTextBox);
+				contentPanel.addComponent(execPrompt);
 				contentPanel.addComponent(execTextBox);
 
 				submitButton.addListener((Button button) -> {
