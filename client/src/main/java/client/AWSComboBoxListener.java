@@ -117,7 +117,8 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			// fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
 			String os = System.getProperty("os.name").toLowerCase();
 			if (os.contains("win")){
-				fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
+				fireProcessBuilder("curl.exe", "--output", selectedValue, "--url", presign);
+				// fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
 			}else{
 				fireProcessBuilder("wget", presign, "-O", selectedValue);
 			}
