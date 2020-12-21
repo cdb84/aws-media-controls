@@ -114,12 +114,14 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		if (selectedValue.contains(".srt")){
 			// just spit out an error message with the presign link so we can download the
 			// subtitle files separately
-			fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
+			// fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
+			fireProcessBuilder("wget", presign, "-O", selectedValue);
 			return;
 		}
 		// have to execute the apprent file as a presign
-		
-		fireProcessBuilder(exec, presign);
+		else{
+			fireProcessBuilder(exec, presign);
+		}
 	}
 
 	private String scrubAmpersands(String presign){
