@@ -108,6 +108,16 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		return path;
 	}
 
+	private void downloadFile(String presign, String outputName){
+		String os = System.getProperty("os.name").toLowerCase();
+		if (os.contains("win")){
+			fireProcessBuilder("curl.exe", "--output", outputName, "--url", presign);
+			// fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
+		}else{
+			fireProcessBuilder("wget", presign, "-O", outputName);
+		}
+	}
+
 	private void exec(String selectedValue){
 		String path = buildPathFor(selectedValue);
 		String presign = handler.generatePresignedUrlFromKey(path).toString();
@@ -115,17 +125,27 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			// just spit out an error message with the presign link so we can download the
 			// subtitle files separately
 			// fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
-			String os = System.getProperty("os.name").toLowerCase();
-			if (os.contains("win")){
-				fireProcessBuilder("curl.exe", "--output", selectedValue, "--url", presign);
-				// fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
-			}else{
-				fireProcessBuilder("wget", presign, "-O", selectedValue);
-			}
+			downloadFile(presign, selectedValue);
 		}
 		// have to execute the apprent file as a presign
 		else{
-			fireProcessBuilder(exec, presign);
+			// would love to check for an .srt with the same prefix as this one
+			// fireProcessBuilder("zenity", "--info", "--text='"+selectedValue+"'");
+			// first chop the last dot prefix off the end (e.g. .mp4)
+			String fileName = selectedValue.substring(0, selectedValue.lastIndexOf('.'));
+			fileName += ".srt";
+			String subtitlePath = buildPathFor(fileName);
+			String subtitlePresign = handler.generatePresignedUrlFromKey(subtitlePath).toString();
+			if (!subtitlePath.equals("")){
+				downloadFile(subtitlePresign, fileName);
+				if (exec.contains("vlc")){ 
+					fireProcessBuilder(exec, presign, "--sub-file="+fileName);
+				}
+			}
+			else{
+				fireProcessBuilder(exec, presign);
+			}
+			// vlc would use --sub-file=FILE
 		}
 	}
 
