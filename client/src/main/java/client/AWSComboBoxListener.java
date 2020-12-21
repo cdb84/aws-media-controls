@@ -115,8 +115,12 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			// just spit out an error message with the presign link so we can download the
 			// subtitle files separately
 			// fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
-			fireProcessBuilder("wget", presign, "-O", selectedValue);
-			return;
+			String os = System.getProperty("os.name").toLowerCase();
+			if (os.contains("win")){
+				fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
+			}else{
+				fireProcessBuilder("wget", presign, "-O", selectedValue);
+			}
 		}
 		// have to execute the apprent file as a presign
 		else{
