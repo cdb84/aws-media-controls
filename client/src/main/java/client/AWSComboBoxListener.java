@@ -109,9 +109,21 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	}
 
 	private void exec(String selectedValue){
-		// have to execute the apprent file as a presign
 		String path = buildPathFor(selectedValue);
-		fireProcessBuilder(exec, handler.generatePresignedUrlFromKey(path).toString());
+		String presign = handler.generatePresignedUrlFromKey(path).toString();
+		if (selectedValue.contains(".srt")){
+			// just spit out an error message with the presign link so we can download the
+			// subtitle files separately
+			fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
+			return;
+		}
+		// have to execute the apprent file as a presign
+		
+		fireProcessBuilder(exec, presign);
+	}
+
+	private String scrubAmpersands(String presign){
+		return presign.replace("&", "&amp;");
 	}
 
 	private void fireProcessBuilder(String...args){
