@@ -60,9 +60,6 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			// if we have new selections in the first place, add them
 			// as a new combo box to the panel
 			if (subObjects.size() != 0) {
-				if (this.children == null){
-					this.children = new ArrayList<ComboBox<String>>();
-				}
 				// right here we will add the option to open this in as a playlist
 				subObjects.add("Open all as playlist");
 				ComboBox<String> child = new ComboBox<String>(subObjects);
@@ -78,6 +75,9 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	}
 
 	public void addChild(ComboBox<String> child){
+		if (this.children == null){
+			this.children = new ArrayList<ComboBox<String>>();
+		}
 		this.children.add(child);
 		if(this.parentListener != null){
 			this.parentListener.addChild(child);
@@ -122,16 +122,10 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		String path = buildPathFor(selectedValue);
 		String presign = handler.generatePresignedUrlFromKey(path).toString();
 		if (selectedValue.contains(".srt")){
-			// just spit out an error message with the presign link so we can download the
-			// subtitle files separately
-			// fireProcessBuilder("zenity", "--info", "--text="+scrubAmpersands(presign));
 			downloadFile(presign, selectedValue);
 		}
 		// have to execute the apprent file as a presign
 		else{
-			// would love to check for an .srt with the same prefix as this one
-			// fireProcessBuilder("zenity", "--info", "--text='"+selectedValue+"'");
-			// first chop the last dot prefix off the end (e.g. .mp4)
 			String fileName = selectedValue.substring(0, selectedValue.lastIndexOf('.'));
 			fileName += ".srt";
 			String subtitlePath = buildPathFor(fileName);
@@ -145,7 +139,6 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			else{
 				fireProcessBuilder(exec, presign);
 			}
-			// vlc would use --sub-file=FILE
 		}
 	}
 
