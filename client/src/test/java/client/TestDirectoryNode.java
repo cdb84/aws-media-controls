@@ -38,9 +38,15 @@ public class TestDirectoryNode {
 		String value = "22";
 		DirectoryTreeNode<String> node = new DirectoryTreeNode<String>();
 		node.addChild(new DirectoryTreeNode<String>(value));
-		DirectoryTreeNode<String> actual = node.findValue(value);
-		assertNotNull(actual);
+		DirectoryTreeNode<String> actual;
+		try {
+			actual = node.findValue(value);
+		} catch (ValueNotFoundError e) {
+			fail();
+			return;
+		}
 		assertEquals(value, actual.value);
+
 	}
 
 	@Test
@@ -49,9 +55,21 @@ public class TestDirectoryNode {
 		String sndValue = "23";
 		DirectoryTreeNode<String> node = new DirectoryTreeNode<String>();
 		node.addChild(new DirectoryTreeNode<String>(value));
-		DirectoryTreeNode<String> actual = node.findValue(value);
+		DirectoryTreeNode<String> actual;
+		try {
+			actual = node.findValue(value);
+		} catch (ValueNotFoundError e) {
+			fail();
+			return;
+		}
 		actual.addChild(new DirectoryTreeNode<String>(sndValue));
-		DirectoryTreeNode<String> found = node.findValue(sndValue);
+		DirectoryTreeNode<String> found;
+		try {
+			found = node.findValue(sndValue);
+		} catch (ValueNotFoundError e) {
+			fail();
+			return;
+		}
 		assertNotNull(found);
 		assertEquals(sndValue, found.value);
 	}
@@ -62,8 +80,18 @@ public class TestDirectoryNode {
 		DirectoryTreeNode<String> node = new DirectoryTreeNode<String>("olleh drowedrdl!");
 		node.addChild(new DirectoryTreeNode<String>("hello world!"));
 		node.addChild(new DirectoryTreeNode<String>("Also hello world!"));
-		DirectoryTreeNode<String> actual = node.findValue(value);
-		assertNotNull(node.findValue("hello world!"));
+		DirectoryTreeNode<String> actual;
+		try {
+			actual = node.findValue(value);
+		} catch (ValueNotFoundError e) {
+			fail();
+			return;
+		}
+		try {
+			assertNotNull(node.findValue("hello world!"));
+		} catch (ValueNotFoundError e) {
+			fail();
+		}
 		assertNull(actual);
 	}
 
@@ -87,7 +115,7 @@ public class TestDirectoryNode {
 			try {
 				found = node.findValue(item);
 			} catch (ValueNotFoundError e) {
-				fail("Was not able to find "+item);
+				fail("Was not able to find " + item);
 				found = null;
 			}
 		}
@@ -121,8 +149,15 @@ public class TestDirectoryNode {
 		// a quick smoke test to ensure we can find everything that
 		// went into the tree
 
-		DirectoryTreeNode<String> foundA = node.findValue("lol");
-		DirectoryTreeNode<String> foundB = node.findValue("no");
+		DirectoryTreeNode<String> foundA;
+		DirectoryTreeNode<String> foundB;
+		try {
+			foundA = node.findValue("lol");
+			foundB = node.findValue("no");
+		} catch (ValueNotFoundError e) {
+			fail();
+			return;
+		}
 
 		assertNotNull(foundA);
 		assertNotNull(foundB);
