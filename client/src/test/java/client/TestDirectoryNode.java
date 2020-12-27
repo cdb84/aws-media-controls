@@ -82,17 +82,16 @@ public class TestDirectoryNode {
 		node.addChild(new DirectoryTreeNode<String>("Also hello world!"));
 		DirectoryTreeNode<String> actual;
 		try {
-			actual = node.findValue(value);
-		} catch (ValueNotFoundError e) {
-			fail();
-			return;
-		}
-		try {
 			assertNotNull(node.findValue("hello world!"));
 		} catch (ValueNotFoundError e) {
 			fail();
 		}
-		assertNull(actual);
+		try {
+			actual = node.findValue(value);
+			fail(); // should not get here.
+		} catch (ValueNotFoundError e) {
+			// this is good
+		}
 	}
 
 	@Test
@@ -150,13 +149,18 @@ public class TestDirectoryNode {
 		// went into the tree
 
 		DirectoryTreeNode<String> foundA;
-		DirectoryTreeNode<String> foundB;
 		try {
 			foundA = node.findValue("lol");
+		} catch (ValueNotFoundError e) {
+			// e.printStackTrace();
+			foundA = null;
+		}
+		DirectoryTreeNode<String> foundB;
+		try {
 			foundB = node.findValue("no");
 		} catch (ValueNotFoundError e) {
-			fail();
-			return;
+			// e.printStackTrace();
+			foundB = null;
 		}
 
 		assertNotNull(foundA);

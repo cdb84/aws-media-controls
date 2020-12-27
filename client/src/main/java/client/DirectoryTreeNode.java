@@ -65,7 +65,11 @@ public class DirectoryTreeNode<T> {
 			DirectoryTreeNode<T> found = null;
 			for (DirectoryTreeNode<T> child : children) {
 				if (found == null) {
-					found = child.findValue(needle);
+					try {
+						found = child.findValue(needle);
+					} catch (ValueNotFoundError e){
+						found = null;
+					}
 				} else {
 					break;
 				}
