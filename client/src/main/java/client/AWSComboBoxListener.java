@@ -87,18 +87,20 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	private void execAllOptions(){
 		List<String> allOptions = new ArrayList<String>();
 		allOptions.add(exec);
+		// we use a magic -1 here because there is usually always a "Open all as playlist option" and who knows
+		// what would happen if we recursed there
 		for (int i = 0; i < this.instance.getItemCount()-1; i++){
 			String url = handler.generatePresignedUrlFromKey(buildPathFor(this.instance.getItem(i))).toString();
 			allOptions.add(url);
 		}
 		String[] args = new String[allOptions.size()];
-		fireProcessBuilder(allOptions.toArray(args));
+		createProcessBuilder(allOptions.toArray(args));
 	}
 
 	private String buildPathFor(String selectedValue){
 		String path = "";
 		List<DirectoryTreeNode<String>> above = handler.returnEverythingAbove(selectedValue);
-		if (above == null) return "";
+		if (above == null) return path;
 		for (DirectoryTreeNode<String> parent : above){
 			if (parent.value != null){
 				path = parent.value +"/"+ path;
@@ -111,10 +113,9 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	private void downloadFile(String presign, String outputName){
 		String os = System.getProperty("os.name").toLowerCase();
 		if (os.contains("win")){
-			fireProcessBuilder("curl.exe", "--output", outputName, "--url", presign);
-			// fireProcessBuilder("wget", presign, "-OutFile", selectedValue);	
+			createProcessBuilder("curl.exe", "--output", outputName, "--url", presign);
 		}else{
-			fireProcessBuilder("wget", presign, "-O", outputName);
+			createProcessBuilder("wget", presign, "-O", outputName);
 		}
 	}
 
@@ -133,16 +134,16 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			if (!subtitlePath.equals("")){
 				downloadFile(subtitlePresign, fileName);
 				if (exec.contains("vlc")){ 
-					fireProcessBuilder(exec, presign, "--sub-file="+fileName);
+					createProcessBuilder(exec, presign, "--sub-file="+fileName);
 				}
 			}
 			else{
-				fireProcessBuilder(exec, presign);
+				createProcessBuilder(exec, presign);
 			}
 		}
 	}
 
-	private void fireProcessBuilder(String...args){
+	private void createProcessBuilder(String...args){
 		ProcessBuilder pb = new ProcessBuilder(args);
 		try {
 			pb.start();
