@@ -149,10 +149,6 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		}
 	}
 
-	private String scrubAmpersands(String presign){
-		return presign.replace("&", "&amp;");
-	}
-
 	private void fireProcessBuilder(String...args){
 		ProcessBuilder pb = new ProcessBuilder(args);
 		try {

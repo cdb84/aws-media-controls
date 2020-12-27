@@ -68,7 +68,7 @@ public class Handler {
 
 	public List<DirectoryTreeNode<String>> returnEverythingAbove(String value){
 		DirectoryTreeNode<String> found = bucketStructure.findValue(value);
-		return found.getParents();
+		return found == null ? null : found.getParents();
 	}
 
 	public List<DirectoryTreeNode<String>> returnEverythingUnder(String value){
