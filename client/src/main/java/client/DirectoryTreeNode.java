@@ -4,7 +4,18 @@ import java.util.List;
 import java.util.Stack;
 import java.util.ArrayList;
 
+
+class ValueNotFoundError extends Exception{
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1L;
+
+}
+
 public class DirectoryTreeNode<T> {
+
 	public T value;
 	private List<DirectoryTreeNode<T>> children;
 	private DirectoryTreeNode<T> parent;
@@ -47,7 +58,7 @@ public class DirectoryTreeNode<T> {
 		newChild.addPath(pathItems);
 	}
 
-	public DirectoryTreeNode<T> findValue(T needle) {
+	public DirectoryTreeNode<T> findValue(T needle) throws ValueNotFoundError {
 		if (this.value != null && this.value.equals(needle)) {
 			return this;
 		} else {
@@ -58,6 +69,9 @@ public class DirectoryTreeNode<T> {
 				} else {
 					break;
 				}
+			}
+			if (found == null){
+				throw new ValueNotFoundError();
 			}
 			return found;
 		}

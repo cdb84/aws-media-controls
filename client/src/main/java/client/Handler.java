@@ -66,12 +66,12 @@ public class Handler {
 		return this.cache.getObjectSummaries();
 	}
 
-	public List<DirectoryTreeNode<String>> returnEverythingAbove(String value){
+	public List<DirectoryTreeNode<String>> returnEverythingAbove(String value) throws ValueNotFoundError {
 		DirectoryTreeNode<String> found = bucketStructure.findValue(value);
-		return found == null ? null : found.getParents();
+		return found.getParents();
 	}
 
-	public List<DirectoryTreeNode<String>> returnEverythingUnder(String value){
+	public List<DirectoryTreeNode<String>> returnEverythingUnder(String value) throws ValueNotFoundError {
 		DirectoryTreeNode<String> found = bucketStructure.findValue(value);
 		return found.getChildren();
 	}

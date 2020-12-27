@@ -17,7 +17,8 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	AWSComboBoxListener parentListener;
 	String exec;
 
-	AWSComboBoxListener(ComboBox<String> instance, Panel contentPanel, boolean topLevelInstance, Handler handler, String exec) {
+	AWSComboBoxListener(ComboBox<String> instance, Panel contentPanel, boolean topLevelInstance, Handler handler,
+			String exec) {
 		this.instance = instance;
 		this.contentPanel = contentPanel;
 		this.topLevelInstance = topLevelInstance;
@@ -25,14 +26,19 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		this.exec = exec;
 	}
 
-	AWSComboBoxListener(ComboBox<String> instance, Panel contentPanel, boolean topLevelInstance, Handler handler, String exec, AWSComboBoxListener parentListener){
+	AWSComboBoxListener(ComboBox<String> instance, Panel contentPanel, boolean topLevelInstance, Handler handler,
+			String exec, AWSComboBoxListener parentListener) {
 		this(instance, contentPanel, topLevelInstance, handler, exec);
 		this.parentListener = parentListener;
 	}
 
-	public List<String> getSubObjects(String selectedValue){
-		return handler.returnEverythingUnder(selectedValue).stream().map(treeNode -> treeNode.toString())
-		.collect(Collectors.toList());
+	public List<String> getSubObjects(String selectedValue) {
+		try {
+			return handler.returnEverythingUnder(selectedValue).stream().map(treeNode -> treeNode.toString())
+					.collect(Collectors.toList());
+		} catch (ValueNotFoundError e) {
+			return new ArrayList<String>();
+		}
 	}
 
 	@Override
@@ -46,13 +52,12 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 		}
 		// now get the new selections
 		List<String> subObjects = getSubObjects(selectedValue);
-		if (subObjects.size() == 0 && withSuffix.charAt(withSuffix.length() - 1) != '/'){
+		if (subObjects.size() == 0 && withSuffix.charAt(withSuffix.length() - 1) != '/') {
 			exec(selectedValue);
-		}
-		else{
+		} else {
 			// if we had children, they need to go.
-			if (this.children != null && this.children.size() > 0){
-				for(ComboBox<String> child : children){
+			if (this.children != null && this.children.size() > 0) {
+				for (ComboBox<String> child : children) {
 					contentPanel.removeComponent(child);
 				}
 				this.children = null;
@@ -66,70 +71,87 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 				addChild(child);
 				child.addListener(new AWSComboBoxListener(child, contentPanel, false, handler, exec, this));
 				contentPanel.addComponent(child);
-			}
-			else if (instance.getItem(selectedIndex).charAt(instance.getItem(selectedIndex).length()-1) != '/'){
+			} else if (instance.getItem(selectedIndex).charAt(instance.getItem(selectedIndex).length() - 1) != '/') {
 				exec(selectedValue);
 			}
-			
+
 		}
 	}
 
-	public void addChild(ComboBox<String> child){
-		if (this.children == null){
+	public void addChild(ComboBox<String> child) {
+		if (this.children == null) {
 			this.children = new ArrayList<ComboBox<String>>();
 		}
 		this.children.add(child);
-		if(this.parentListener != null){
+		if (this.parentListener != null) {
 			this.parentListener.addChild(child);
 		}
 	}
 
-	private void execAllOptions(){
+	private void execAllOptions() {
 		List<String> allOptions = new ArrayList<String>();
 		allOptions.add(exec);
-		// we use a magic -1 here because there is usually always a "Open all as playlist option" and who knows
+		// we use a magic -1 here because there is usually always a "Open all as
+		// playlist option" and who knows
 		// what would happen if we recursed there
-		for (int i = 0; i < this.instance.getItemCount()-1; i++){
-			String url = handler.generatePresignedUrlFromKey(buildPathFor(this.instance.getItem(i))).toString();
+		for (int i = 0; i < this.instance.getItemCount() - 1; i++) {
+			String url;
+			try {
+				url = handler.generatePresignedUrlFromKey(buildPathFor(this.instance.getItem(i))).toString();
+			} catch (ValueNotFoundError e) {
+				url = "";
+				e.printStackTrace();
+			}
 			allOptions.add(url);
 		}
 		String[] args = new String[allOptions.size()];
 		createProcessBuilder(allOptions.toArray(args));
 	}
 
-	private String buildPathFor(String selectedValue){
+	private String buildPathFor(String selectedValue) throws ValueNotFoundError {
 		String path = "";
 		List<DirectoryTreeNode<String>> above = handler.returnEverythingAbove(selectedValue);
-		if (above == null) return path;
-		for (DirectoryTreeNode<String> parent : above){
-			if (parent.value != null){
-				path = parent.value +"/"+ path;
+		for (DirectoryTreeNode<String> parent : above) {
+			if (parent.value != null) {
+				path = parent.value + "/" + path;
 			}
 		}
 		path += selectedValue;
 		return path;
 	}
 
-	private void downloadFile(String presign, String outputName){
+	private void downloadFile(String presign, String outputName) {
 		String os = System.getProperty("os.name").toLowerCase();
-		if (os.contains("win")){
+		if (os.contains("win")) {
 			createProcessBuilder("curl.exe", "--output", outputName, "--url", presign);
-		}else{
+		} else {
 			createProcessBuilder("wget", presign, "-O", outputName);
 		}
 	}
 
-	private void exec(String selectedValue){
-		String path = buildPathFor(selectedValue);
+	private void exec(String selectedValue) {
+		String path;
+		try {
+			path = buildPathFor(selectedValue);
+		} catch (ValueNotFoundError e) {
+			e.printStackTrace();
+			return;
+		}
 		String presign = handler.generatePresignedUrlFromKey(path).toString();
-		if (selectedValue.contains(".srt")){
+		if (selectedValue.contains(".srt")) {
 			downloadFile(presign, selectedValue);
 		}
 		// have to execute the apprent file as a presign
-		else{
+		else {
 			String fileName = selectedValue.substring(0, selectedValue.lastIndexOf('.'));
 			fileName += ".srt";
-			String subtitlePath = buildPathFor(fileName);
+			String subtitlePath;
+			try {
+				subtitlePath = buildPathFor(fileName);
+			} catch (ValueNotFoundError e) {
+				e.printStackTrace();
+				return;
+			}
 			String subtitlePresign = handler.generatePresignedUrlFromKey(subtitlePath).toString();
 			if (!subtitlePath.equals("")){
 				downloadFile(subtitlePresign, fileName);
