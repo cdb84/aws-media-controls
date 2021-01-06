@@ -91,22 +91,41 @@ public class Client {
 			}
 
 
-			System.err.println("Initializing handler for " + bucketName + " executing " + exec);
-			Handler h = new Handler(bucketName, AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build());
+			boolean isErrorState = false;
+			Exception caughtException;
+			Handler h = null;
+			try{
+				h = new Handler(bucketName, AmazonS3ClientBuilder.standard().withRegion(Regions.US_EAST_2).build());
+				caughtException = new Exception();
+			}catch(Exception e){
+				caughtException = e;
+				isErrorState = true;
+			}
 
 			final WindowBasedTextGUI textGUI = new MultiWindowTextGUI(screen);
 			final Window window = new BasicWindow("AWS Media Console - " + bucketName);
-			Panel contentPanel = new Panel(new GridLayout(1));
+			Panel contentPanel = new Panel();
 
-			GridLayout gridLayout = (GridLayout) contentPanel.getLayoutManager();
-			gridLayout.setHorizontalSpacing(4);
+			Button exit = new Button("Exit", new Runnable(){
+				public void run(){
+					System.exit(0);
+				}
+			});
+			contentPanel.addComponent(exit);
 
-			List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
-			ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
-			topLevelComboBox.setReadOnly(true);
-			topLevelComboBox.addListener(new AWSComboBoxListener(topLevelComboBox, contentPanel, true, h, exec));
 
-			contentPanel.addComponent(topLevelComboBox);
+			if (!isErrorState){
+				List<String> topLevelDirs = h.returnListOfAllTopLevelFolders();
+				ComboBox<String> topLevelComboBox = new ComboBox<>(topLevelDirs);
+				topLevelComboBox.setReadOnly(true);
+				topLevelComboBox.addListener(new AWSComboBoxListener(topLevelComboBox, contentPanel, true, h, exec));
+				contentPanel.addComponent(topLevelComboBox);
+			}else{
+				Label status = new Label("");
+				status.setLabelWidth(75);
+				status.setText("Error connecting to "+bucketName+": "+caughtException.toString());
+				contentPanel.addComponent(status);
+			}
 
 			window.setComponent(contentPanel);
 
