@@ -99,7 +99,7 @@ public class Handler {
 	public URL generatePresignedUrlFromKey(String key) {
 		Date expiration = new java.util.Date();
 		long expTimeMillis = expiration.getTime();
-		expTimeMillis += 1000 * 60 * 60;
+		expTimeMillis += (1000 * 60 * 60)*6;
 		expiration.setTime(expTimeMillis);
 		return this.generatePresignedUrlFromKey(key, expiration);
 	}
