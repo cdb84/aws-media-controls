@@ -76,9 +76,9 @@ public class Handler {
 		return found.getChildren();
 	}
 
-	public List<String> returnListOfAllTopLevelFolders(){
+	public List<String> returnListOfAllTopLevelFolders() {
 		List<String> res = new ArrayList<String>();
-		for (S3ObjectSummary object : this.returnListOfAllTopLevelFolderSummaries()){
+		for (S3ObjectSummary object : this.returnListOfAllTopLevelFolderSummaries()) {
 			res.add(object.getKey());
 		}
 		return res;
@@ -99,7 +99,7 @@ public class Handler {
 	public URL generatePresignedUrlFromKey(String key) {
 		Date expiration = new java.util.Date();
 		long expTimeMillis = expiration.getTime();
-		expTimeMillis += (1000 * 60 * 60)*6;
+		expTimeMillis += (1000 * 60 * 60) * 6;
 		expiration.setTime(expTimeMillis);
 		return this.generatePresignedUrlFromKey(key, expiration);
 	}
