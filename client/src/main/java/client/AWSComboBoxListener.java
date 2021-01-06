@@ -1,6 +1,5 @@
 package client;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -106,7 +105,7 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			allOptions.add(url);
 		}
 		String[] args = new String[allOptions.size()];
-		createProcess(allOptions.toArray(args));
+		createProcessBuilder(allOptions.toArray(args));
 	}
 
 	private String buildPathFor(String selectedValue) throws ValueNotFoundError {
@@ -124,9 +123,9 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	private void downloadFile(String presign, String outputName) {
 		String os = System.getProperty("os.name").toLowerCase();
 		if (os.contains("win")) {
-			createProcess("curl.exe", "--output", outputName, "--url", presign);
+			createProcessBuilder("curl.exe", "--output", outputName, "--url", presign);
 		} else {
-			createProcess("wget", presign, "-O", outputName);
+			createProcessBuilder("wget", presign, "-O", outputName);
 		}
 	}
 
@@ -154,22 +153,24 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 				return;
 			}
 			String subtitlePresign = handler.generatePresignedUrlFromKey(subtitlePath).toString();
-			if (!subtitlePath.equals("")) {
+			if (!subtitlePath.equals("")){
 				downloadFile(subtitlePresign, fileName);
-				if (exec.contains("vlc")) {
-					createProcess(exec, presign, "--sub-file=" + fileName);
+				if (exec.contains("vlc")){ 
+					createProcessBuilder(exec, presign, "--sub-file="+fileName);
 				}
-			} else {
-				createProcess(exec, presign);
+			}
+			else{
+				createProcessBuilder(exec, presign);
 			}
 		}
 	}
 
-	private void createProcess(String... args) {
+	private void createProcessBuilder(String...args){
+		ProcessBuilder pb = new ProcessBuilder(args);
 		try {
-			Runtime.getRuntime().exec(args);
-		} catch (IOException e1) {
-			e1.printStackTrace();
+			pb.start();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }
