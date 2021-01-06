@@ -1,5 +1,6 @@
 package client;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -153,23 +154,21 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 				return;
 			}
 			String subtitlePresign = handler.generatePresignedUrlFromKey(subtitlePath).toString();
-			if (!subtitlePath.equals("")){
+			if (!subtitlePath.equals("")) {
 				downloadFile(subtitlePresign, fileName);
-				if (exec.contains("vlc")){ 
-					createProcessBuilder(exec, presign, "--sub-file="+fileName);
+				if (exec.contains("vlc")) {
+					createProcessBuilder(exec, presign, "--sub-file=" + fileName);
 				}
-			}
-			else{
+			} else {
 				createProcessBuilder(exec, presign);
 			}
 		}
 	}
 
-	private void createProcessBuilder(String...args){
-		ProcessBuilder pb = new ProcessBuilder(args);
+	private void createProcessBuilder(String... args) {
 		try {
-			pb.start();
-		} catch (Exception e) {
+			Runtime.getRuntime().exec(args);
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
