@@ -9,7 +9,7 @@
   <groupId>client</groupId>
   <artifactId>client</artifactId>
   <packaging>jar</packaging>
-  <version>1.4-Beta</version>
+  <version>1.4-Stable</version>
   <dependencyManagement>
     <dependencies>
       <dependency>

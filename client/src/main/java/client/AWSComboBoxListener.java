@@ -150,8 +150,7 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 			try {
 				subtitlePath = buildPathFor(fileName);
 			} catch (ValueNotFoundError e) {
-				e.printStackTrace();
-				return;
+				subtitlePath = "";
 			}
 			String subtitlePresign = handler.generatePresignedUrlFromKey(subtitlePath).toString();
 			if (!subtitlePath.equals("")) {
@@ -166,9 +165,10 @@ public class AWSComboBoxListener implements ComboBox.Listener {
 	}
 
 	private void createProcessBuilder(String... args) {
+		ProcessBuilder pb = new ProcessBuilder(args);
 		try {
-			Runtime.getRuntime().exec(args);
-		} catch (IOException e) {
+			pb.start();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
