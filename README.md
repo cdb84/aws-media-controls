@@ -20,3 +20,9 @@ The `--gui` option specifies whether the console runs in your terminal, or as a 
 Alternatively, if the jar is marked as executable, you can run it from the desktop environment. It will ask you to input the bucket name and executable. On Windows, it is recommended that you include the entire path to your media player, e.g. `C:\Program Files\VideoLAN\VLC\vlc.exe`.
 
 You must have access to the bucket in question---either use a public bucket, or set up your AWS credentials using the AWS CLI configurator. 
+
+## Why would you ever make this???
+
+I like old, archaic UIs that remind me of the earlier days of computing :) 
+
+Plus, it's simple and not at all resource intensive. It really does just work (tm).
